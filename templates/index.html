@@ -1,0 +1,229 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moodiji — AI Emoji Translator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="paper-dots"></div>
+
+  <header class="nav">
+    <a class="brand" href="#home" aria-label="Moodiji home">
+      <span class="logo-face">◉‿◉</span>
+      <span>moodiji<span class="dot">.</span></span>
+    </a>
+    <nav>
+      <a href="#translator">Translator</a>
+      <a href="#history">History</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="home" class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">🤖 THE INTERNET'S LEAST NECESSARY TOOL</p>
+        <h1>Say less.<br><span>Emoji more.</span></h1>
+        <p class="hero-text">
+          Type a perfectly normal sentence. Moodiji will turn it into an
+          aggressively unnecessary emoji sentence.
+        </p>
+        <a class="comic-btn" href="#translator">LET'S MAKE IT USELESS →</a>
+      </div>
+      <div class="hero-card">
+        <div class="speech">WHAT IF WORDS...<br><b>but emoji?</b></div>
+        <div class="mascot">🤖</div>
+        <div class="float-emoji e1">💀</div>
+        <div class="float-emoji e2">✨</div>
+        <div class="float-emoji e3">🗿</div>
+      </div>
+    </section>
+
+    <section id="translator" class="section translator-section">
+      <div class="section-title">
+        <span class="scribble">01</span>
+        <div>
+          <p class="eyebrow">THE MAIN EVENT</p>
+          <h2>Translate your nonsense.</h2>
+        </div>
+      </div>
+
+      <div class="translator-card">
+        <label for="inputText">YOUR VERY IMPORTANT SENTENCE</label>
+        <textarea id="inputText" maxlength="500"
+          placeholder="e.g. I have an exam tomorrow and I haven't studied anything..."></textarea>
+
+        <div class="toolbar">
+          <span id="charCount">0 / 500</span>
+          <button id="translateBtn" class="comic-btn small">TRANSLATE ✨</button>
+        </div>
+
+        <div id="resultPanel" class="result hidden">
+          <div class="result-top">
+            <div>
+              <span class="result-label">MOODIJI SAYS:</span>
+              <div id="emojiResult" class="emoji-result">🫥</div>
+            </div>
+            <div class="score-badge">
+              <span>USELESS SCORE</span>
+              <strong id="score">0</strong><small>/100</small>
+            </div>
+          </div>
+          <div class="result-actions">
+            <button id="copyBtn" class="action-btn">📋 COPY</button>
+            <button id="regenBtn" class="action-btn">🔄 REGENERATE</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="history" class="section">
+      <div class="section-title">
+        <span class="scribble">02</span>
+        <div>
+          <p class="eyebrow">YOUR DIGITAL FOOTPRINT</p>
+          <h2>History of bad decisions.</h2>
+        </div>
+      </div>
+      <div id="historyList" class="history-grid">
+        <div class="empty-history">Nothing here yet. Go translate something silly. 🫠</div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="brand"><span class="logo-face">◉‿◉</span> moodiji<span class="dot">.</span></div>
+    <p>Converting useful sentences into useless emoji since absolutely nobody asked.</p>
+  </footer>
+
+<script>
+const input = document.getElementById("inputText");
+const resultPanel = document.getElementById("resultPanel");
+const emojiResult = document.getElementById("emojiResult");
+const scoreEl = document.getElementById("score");
+const historyList = document.getElementById("historyList");
+const charCount = document.getElementById("charCount");
+
+input.addEventListener("input", () => {
+  charCount.textContent = `${input.value.length} / 500`;
+});
+
+async function translate(endpoint="/translate") {
+  const text = input.value.trim();
+  if (!text) {
+    input.focus();
+    return;
+  }
+
+  let response;
+  let data;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({text})
+    });
+    data = await response.json();
+  } catch (error) {
+    alert("Moodiji could not reach the server. Is Flask running?");
+    return;
+  }
+
+  if (!response.ok) {
+    alert(data.error || "Something went wrong.");
+    return;
+  }
+
+  emojiResult.textContent = data.translation;
+  scoreEl.textContent = data.score;
+  resultPanel.classList.remove("hidden");
+
+  saveHistory(text, data.translation, data.score);
+}
+
+document.getElementById("translateBtn").addEventListener("click", () => translate());
+
+document.getElementById("regenBtn").addEventListener("click", () => {
+  if (input.value.trim()) translate("/regenerate");
+});
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("copyBtn");
+  const old = btn.textContent;
+  try {
+    await navigator.clipboard.writeText(emojiResult.textContent);
+    btn.textContent = "✅ COPIED!";
+  } catch (error) {
+    btn.textContent = "COPY FAILED";
+  } finally {
+    setTimeout(() => btn.textContent = old, 1200);
+  }
+});
+
+function saveHistory(text, emoji, score) {
+  let history = readHistory();
+  history.unshift({text, emoji, score});
+  history = history.slice(0, 12);
+  try {
+    localStorage.setItem("moodiji-history", JSON.stringify(history));
+  } catch (error) {
+    alert("History could not be saved in this browser.");
+  }
+  renderHistory();
+}
+
+function renderHistory() {
+  const history = readHistory();
+  if (!history.length) {
+    historyList.innerHTML = '<div class="empty-history">Nothing here yet. Go translate something silly. 🫠</div>';
+    return;
+  }
+  historyList.innerHTML = history.map((item, i) => `
+    <article class="history-card">
+      <span>#${history.length - i} • USELESS ${item.score}/100</span>
+      <p>${escapeHtml(item.text)}</p>
+      <strong>${escapeHtml(item.emoji)}</strong>
+      <button onclick="reuse(${i})">USE AGAIN ↗</button>
+    </article>
+  `).join("");
+}
+
+function reuse(i) {
+  const history = readHistory();
+  if (!history[i]) return;
+  input.value = history[i].text;
+  charCount.textContent = `${input.value.length} / 500`;
+  document.getElementById("translator").scrollIntoView({behavior:"smooth"});
+  translate();
+}
+
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+  }[c]));
+}
+
+function readHistory() {
+  try {
+    const history = JSON.parse(localStorage.getItem("moodiji-history") || "[]");
+    return Array.isArray(history)
+      ? history.filter(item => item && typeof item.text === "string" &&
+        typeof item.emoji === "string" && Number.isFinite(item.score))
+      : [];
+  } catch (error) {
+    try {
+      localStorage.removeItem("moodiji-history");
+    } catch (storageError) {
+      // Storage may be disabled entirely in private browsing.
+    }
+    return [];
+  }
+}
+
+renderHistory();
+</script>
+</body>
+</html>
