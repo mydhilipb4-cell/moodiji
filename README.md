@@ -89,7 +89,7 @@ flowchart LR
 ## Project Demo
 
 ### Video
-WhatsApp Video 2026-09-05 at 5.24.41 AM.mp4
+https://github.com/mydhilipb4-cell/moodiji/blob/main/Demo%20Video%20-%20Pookies%20-%20Useless%20Projects.mp4
 
 ### API
 - `POST /translate` translates a sentence and returns `translation` and `score`.
