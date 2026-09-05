@@ -89,7 +89,7 @@ flowchart LR
 ## Project Demo
 
 ### Video
-No video link is available yet. A future demo should show sentence translation, emoji regeneration, copy, local history, and the useless score.
+WhatsApp Video 2026-09-05 at 5.24.41 AM.mp4
 
 ### API
 - `POST /translate` translates a sentence and returns `translation` and `score`.
